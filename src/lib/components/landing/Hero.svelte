@@ -116,6 +116,7 @@
 		<p class="bg-text right-text colored-text">Student FDND</p>
 		<p class="bg-text right-text">Student FDND</p>
 		<p class="bg-text right-text colored-text">Student FDND</p>
+        <p class="bg-text right-text">Student FDND</p>
 	</div>
 
 	<!-- Scroll buttons menu -->
