@@ -24,7 +24,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"gsap": "^3.11.5",
+		"gsap": "^3.12.4",
 		"three": "^0.151.3"
 	}
 }

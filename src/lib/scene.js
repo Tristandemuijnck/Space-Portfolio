@@ -2,6 +2,7 @@ import * as THREE from 'three'
 
 // Nieuwe scene maken
 const scene = new THREE.Scene()
+scene.background = new THREE.Color(0x090909)
 
 /* --------------------------------- Camera --------------------------------- */
 
@@ -13,7 +14,7 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const getRandomParticlePos = (particleCount) => {
     const arr = new Float32Array(particleCount * 3)
     for (let i = 0; i < particleCount; i++) {
-        arr[i] = (Math.random() - 0.5) * 10      
+        arr[i] = (Math.random() - 0.5) * 10
     }
     return arr
 }
@@ -30,8 +31,8 @@ const loader = new THREE.TextureLoader()
 
 /* -------------------------------- Material -------------------------------- */
 
-const material = new THREE.PointsMaterial({ 
-    // color: 0xf98f2b, 
+const material = new THREE.PointsMaterial({
+    // color: 0xf98f2b,
     size: 0.05,
     map: loader.load("/img/star.png"),
     transparent: true,
@@ -62,7 +63,7 @@ document.addEventListener('mousemove', (event) => {
 })
 
 // Renderer
-let renderer 
+let renderer
 
 /* -------------------------------- Animation ------------------------------- */
 
@@ -94,4 +95,3 @@ export const createScene = (canvas) => {
 /* -------------------------------- Listeners ------------------------------- */
 
 window.addEventListener('resize', resize)
-
