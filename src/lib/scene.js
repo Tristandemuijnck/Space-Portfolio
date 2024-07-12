@@ -119,6 +119,7 @@ const resize = () => {
 }
 
 /* --------------------------------- Pointer -------------------------------- */
+
 const onMouseMove = (event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
@@ -128,9 +129,9 @@ const onMouseMove = (event) => {
 
     if (intersects.length > 0) {
         const selectedIsland = intersects[0].object
-
         const islandWorldPosition = new THREE.Vector3()
         selectedIsland.getWorldPosition(islandWorldPosition)
+
         const normalVector = islandWorldPosition.clone().normalize()
         const toCameraVector = camera.position.clone().sub(islandWorldPosition).normalize()
         const dotProduct = normalVector.dot(toCameraVector)
@@ -161,14 +162,11 @@ const onMouseClick = (event) => {
 
     if (intersects.length > 0) {
         const clickedIsland = intersects[0].object;
-
         const islandWorldPosition = new THREE.Vector3();
         clickedIsland.getWorldPosition(islandWorldPosition);
 
         const normalVector = islandWorldPosition.clone().normalize();
-
         const toCameraVector = camera.position.clone().sub(islandWorldPosition).normalize();
-
         const dotProduct = normalVector.dot(toCameraVector);
 
         if (dotProduct > 0) {
