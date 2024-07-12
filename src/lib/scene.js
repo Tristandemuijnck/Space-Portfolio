@@ -4,6 +4,10 @@ import {
     OrbitControls
 } from 'three/addons/controls/OrbitControls.js'
 
+let raycaster
+const mouse = new THREE.Vector2();
+let hoveredIsland = null;
+
 /* ---------------------------------- Scene --------------------------------- */
 
 const scene = new THREE.Scene()
@@ -69,6 +73,10 @@ document.addEventListener('mousemove', (event) => {
 
 let renderer
 
+/* -------------------------------- Raycaster ------------------------------- */
+
+raycaster = new THREE.Raycaster()
+
 /* --------------------------------- Planet --------------------------------- */
 
 const planetGeo = new THREE.SphereGeometry(3, 32, 32)
@@ -99,6 +107,7 @@ islands.forEach(island => {
     const islandMesh = new THREE.Mesh(islandGeo, islandMat)
     islandMesh.position.copy(island.position)
     planet.add(islandMesh)
+    island.mesh = islandMesh
 })
 
 /* --------------------------------- Resize --------------------------------- */
@@ -107,6 +116,67 @@ const resize = () => {
     renderer.setSize(window.innerWidth, window.innerHeight)
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix()
+}
+
+/* --------------------------------- Pointer -------------------------------- */
+const onMouseMove = (event) => {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
+
+    raycaster.setFromCamera(mouse, camera)
+    const intersects = raycaster.intersectObjects(islands.map(i => i.mesh))
+
+    if (intersects.length > 0) {
+        const selectedIsland = intersects[0].object
+
+        const islandWorldPosition = new THREE.Vector3()
+        selectedIsland.getWorldPosition(islandWorldPosition)
+        const normalVector = islandWorldPosition.clone().normalize()
+        const toCameraVector = camera.position.clone().sub(islandWorldPosition).normalize()
+        const dotProduct = normalVector.dot(toCameraVector)
+
+        if (dotProduct > 0) {
+            if (hoveredIsland && hoveredIsland !== selectedIsland) {
+                hoveredIsland.material.color.set(0xff0000)
+            }
+            selectedIsland.material.color.set(0x00ff00)
+            hoveredIsland = selectedIsland
+        } else if (hoveredIsland) {
+            hoveredIsland.material.color.set(0xff0000)
+            hoveredIsland = null
+        }
+    } else if (hoveredIsland) {
+        hoveredIsland.material.color.set(0xff0000)
+        hoveredIsland = null
+    }
+}
+
+const onMouseClick = (event) => {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    const intersects = raycaster.intersectObjects(islands.map(i => i.mesh));
+
+    if (intersects.length > 0) {
+        const clickedIsland = intersects[0].object;
+
+        const islandWorldPosition = new THREE.Vector3();
+        clickedIsland.getWorldPosition(islandWorldPosition);
+
+        const normalVector = islandWorldPosition.clone().normalize();
+
+        const toCameraVector = camera.position.clone().sub(islandWorldPosition).normalize();
+
+        const dotProduct = normalVector.dot(toCameraVector);
+
+        if (dotProduct > 0) {
+            console.log('Island clicked', clickedIsland.position);
+        } else {
+            console.log('Island not visible, click ignored');
+        }
+    }
 }
 
 /* ---------------------------------- Main ---------------------------------- */
@@ -135,8 +205,9 @@ export const createScene = (canvas) => {
         star.rotation.y += 0.0001
         star.position.x = mouseX * 0.0002
         star.position.z = mouseY * -0.0002
-        planet.rotation.y += 0.0025
+        planet.rotation.y += 0.002
         controls.update()
+
         renderer.render(scene, camera)
     }
 
@@ -145,4 +216,6 @@ export const createScene = (canvas) => {
 
 /* -------------------------------- Listeners ------------------------------- */
 
+window.addEventListener('mousemove', onMouseMove, false)
+window.addEventListener('click', onMouseClick, false)
 window.addEventListener('resize', resize)
