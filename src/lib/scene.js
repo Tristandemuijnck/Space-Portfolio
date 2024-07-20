@@ -3,10 +3,14 @@ import getStarfield from './starfield'
 import {
     OrbitControls
 } from 'three/addons/controls/OrbitControls.js'
+import GUI from 'lil-gui'
+import {
+    GLTFLoader
+} from 'three/addons/loaders/GLTFLoader.js'
 
-let raycaster
-const mouse = new THREE.Vector2();
-let hoveredIsland = null;
+let renderer
+let planet
+const gui = new GUI()
 
 /* ---------------------------------- Scene --------------------------------- */
 
@@ -15,40 +19,11 @@ scene.background = new THREE.Color(0x090909)
 
 /* --------------------------------- Camera --------------------------------- */
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000)
-camera.position.z = 6
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 2000)
+camera.position.z = 8
 
-/* -------------------------------- Geometry -------------------------------- */
+/* ----------------------------- Star background ---------------------------- */
 
-const getRandomParticlePos = (particleCount) => {
-    const arr = new Float32Array(particleCount * 3)
-    for (let i = 0; i < particleCount; i++) {
-        arr[i] = (Math.random() - 0.5) * 10
-    }
-    return arr
-}
-
-const geometry = new THREE.BufferGeometry()
-geometry.setAttribute(
-    "position",
-    new THREE.BufferAttribute(getRandomParticlePos(6000), 3)
-)
-
-/* --------------------------------- Loader --------------------------------- */
-
-const loader = new THREE.TextureLoader()
-
-/* -------------------------------- Material -------------------------------- */
-
-const material = new THREE.PointsMaterial({
-    size: 0.02,
-    map: loader.load("/img/star.png"),
-    transparent: true,
-})
-
-/* ---------------------------------- Mesh ---------------------------------- */
-
-const star = new THREE.Points(geometry, material)
 const stars = getStarfield({
     numStars: 8000
 })
@@ -56,59 +31,74 @@ scene.add(stars)
 
 /* ---------------------------------- Light --------------------------------- */
 
-const directionalLight = new THREE.DirectionalLight(0x9090aa)
-directionalLight.position.set(-1, 2, 4).normalize()
-scene.add(directionalLight)
+// Ambient light
+const ambientLight = new THREE.AmbientLight(0xffffff, .5);
+scene.add(ambientLight);
 
-/* ---------------------------------- Mouse --------------------------------- */
+// Key light
+const keyLight = new THREE.DirectionalLight(0xffddcc, 3);
+keyLight.position.set(3, 3, 4);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.width = 4096;
+keyLight.shadow.mapSize.height = 4096;
+keyLight.shadow.camera.near = 3;
+keyLight.shadow.camera.far = 8;
+keyLight.shadow.camera.left = -3;
+keyLight.shadow.camera.right = 3;
+keyLight.shadow.camera.top = 3;
+keyLight.shadow.camera.bottom = -3;
+scene.add(keyLight);
 
-let mouseX = 0
-let mouseY = 0
-document.addEventListener('mousemove', (event) => {
-    mouseX = event.clientX
-    mouseY = event.clientY
+// Fill light
+const fillLight = new THREE.DirectionalLight(0xffffff, 0.9);
+fillLight.position.set(-5, -1, 3);
+fillLight.castShadow = false;
+scene.add(fillLight);
+
+// Back light
+const backLight = new THREE.DirectionalLight(0xccccff, 1.1);
+backLight.position.set(0, -1.5, -5);
+backLight.castShadow = false;
+scene.add(backLight);
+
+/* --------------------------------- Loader --------------------------------- */
+
+const gltfLoader = new GLTFLoader()
+
+/* ---------------------------------- Model --------------------------------- */
+
+gltfLoader.load('/models/Planet.glb', (gltf) => {
+    console.log(gltf)
+    planet = gltf.scene
+    scene.add(planet)
+
+    planet.traverse((child) => {
+        if (child.isMesh) {
+            child.castShadow = true
+            child.receiveShadow = true
+        }
+    })
 })
-
-/* -------------------------------- Renderer -------------------------------- */
-
-let renderer
-
-/* -------------------------------- Raycaster ------------------------------- */
-
-raycaster = new THREE.Raycaster()
-
-/* --------------------------------- Planet --------------------------------- */
-
-const planetGeo = new THREE.SphereGeometry(3, 32, 32)
-const planetMat = new THREE.MeshBasicMaterial({
-    color: 0x0000ff,
-    transparent: false,
-    wireframe: true
-})
-const planet = new THREE.Mesh(planetGeo, planetMat)
-scene.add(planet)
 
 /* --------------------------------- Islands -------------------------------- */
 
-const islandGeo = new THREE.SphereGeometry(0.2, 16, 16)
-const islandMat = new THREE.MeshBasicMaterial({
+const islandOneGeo = new THREE.SphereGeometry(0.2, 16, 16)
+const islandOneMat = new THREE.MeshStandardMaterial({
     color: 0xff0000
 })
 
-const islands = [{
-        position: new THREE.Vector3(3, 0, 0)
-    },
-    {
-        position: new THREE.Vector3(-3, 0, 0)
-    }
-]
-
-islands.forEach(island => {
-    const islandMesh = new THREE.Mesh(islandGeo, islandMat)
-    islandMesh.position.copy(island.position)
-    planet.add(islandMesh)
-    island.mesh = islandMesh
+const islandTwoGeo = new THREE.SphereGeometry(0.2, 16, 16)
+const islandTwoMat = new THREE.MeshStandardMaterial({
+    color: 0x00ff00
 })
+
+const islandOneMesh = new THREE.Mesh(islandOneGeo, islandOneMat)
+islandOneMesh.position.set(3, 0, 0)
+// planet.add(islandOneMesh)
+
+const islandTwoMesh = new THREE.Mesh(islandTwoGeo, islandTwoMat)
+islandTwoMesh.position.set(-3, 0, 0)
+// planet.add(islandTwoMesh)
 
 /* --------------------------------- Resize --------------------------------- */
 
@@ -120,61 +110,11 @@ const resize = () => {
 
 /* --------------------------------- Pointer -------------------------------- */
 
-const onMouseMove = (event) => {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
+const pointer = new THREE.Vector2();
 
-    raycaster.setFromCamera(mouse, camera)
-    const intersects = raycaster.intersectObjects(islands.map(i => i.mesh))
-
-    if (intersects.length > 0) {
-        const selectedIsland = intersects[0].object
-        const islandWorldPosition = new THREE.Vector3()
-        selectedIsland.getWorldPosition(islandWorldPosition)
-
-        const normalVector = islandWorldPosition.clone().normalize()
-        const toCameraVector = camera.position.clone().sub(islandWorldPosition).normalize()
-        const dotProduct = normalVector.dot(toCameraVector)
-
-        if (dotProduct > 0) {
-            if (hoveredIsland && hoveredIsland !== selectedIsland) {
-                hoveredIsland.material.color.set(0xff0000)
-            }
-            selectedIsland.material.color.set(0x00ff00)
-            hoveredIsland = selectedIsland
-        } else if (hoveredIsland) {
-            hoveredIsland.material.color.set(0xff0000)
-            hoveredIsland = null
-        }
-    } else if (hoveredIsland) {
-        hoveredIsland.material.color.set(0xff0000)
-        hoveredIsland = null
-    }
-}
-
-const onMouseClick = (event) => {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    raycaster.setFromCamera(mouse, camera);
-
-    const intersects = raycaster.intersectObjects(islands.map(i => i.mesh));
-
-    if (intersects.length > 0) {
-        const clickedIsland = intersects[0].object;
-        const islandWorldPosition = new THREE.Vector3();
-        clickedIsland.getWorldPosition(islandWorldPosition);
-
-        const normalVector = islandWorldPosition.clone().normalize();
-        const toCameraVector = camera.position.clone().sub(islandWorldPosition).normalize();
-        const dotProduct = normalVector.dot(toCameraVector);
-
-        if (dotProduct > 0) {
-            console.log('Island clicked', clickedIsland.position);
-        } else {
-            console.log('Island not visible, click ignored');
-        }
-    }
+const onPointerMove = (event) => {
+    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 }
 
 /* ---------------------------------- Main ---------------------------------- */
@@ -199,12 +139,11 @@ export const createScene = (canvas) => {
 
     const animate = () => {
         requestAnimationFrame(animate)
-        star.rotation.x += 0.0002
-        star.rotation.y += 0.0001
-        star.position.x = mouseX * 0.0002
-        star.position.z = mouseY * -0.0002
-        planet.rotation.y += 0.002
         controls.update()
+
+        if (planet) {
+            planet.rotation.y += 0.001
+        }
 
         renderer.render(scene, camera)
     }
@@ -214,6 +153,5 @@ export const createScene = (canvas) => {
 
 /* -------------------------------- Listeners ------------------------------- */
 
-window.addEventListener('mousemove', onMouseMove, false)
-window.addEventListener('click', onMouseClick, false)
+window.addEventListener('mousemove', onPointerMove)
 window.addEventListener('resize', resize)

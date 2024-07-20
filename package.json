@@ -33,6 +33,7 @@
 	"type": "module",
 	"dependencies": {
 		"@fontsource-variable/orbitron": "^5.0.19",
+		"lil-gui": "^0.19.2",
 		"three": "^0.166.1"
 	}
 }
