@@ -11,6 +11,7 @@ import {
 let renderer
 let planet
 const gui = new GUI()
+const clock = new THREE.Clock()
 
 /* ---------------------------------- Scene --------------------------------- */
 
@@ -141,8 +142,11 @@ export const createScene = (canvas) => {
         requestAnimationFrame(animate)
         controls.update()
 
+        // Handle rotation speed based on elapsedTime.
+        // This fixes the issue of the planet rotating at different speeds on devices with different framerates.
+        const elapsedTime = clock.getElapsedTime()
         if (planet) {
-            planet.rotation.y += 0.001
+            planet.rotation.y = elapsedTime * 0.15
         }
 
         renderer.render(scene, camera)
